@@ -2,7 +2,7 @@
 
 #include <vector>
 
-typedef std::pair<double, double> dp;
+typedef std::pair<double, double> DP;
 
 class FlatSegment{
 	std::vector<double> pts;
@@ -16,7 +16,7 @@ public:
 	
 	FlatSegment(const std::vector<double>& subdivision):pts(subdivision) {}
 
-	dp GetSubsegment(size_t i){
+	DP GetSubsegment(size_t i){
 		return std::pair<double, double>(pts[i-1], pts[i]);
 	}
 
