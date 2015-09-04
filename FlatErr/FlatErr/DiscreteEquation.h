@@ -4,6 +4,10 @@
 #include "PotentialTrace.h"
 #include "EnergySpace.h"
 
+const size_t QN = 5;
+const double GaussX[QN] = {-1.0, -sqrt(3.0/7.0), 0.0, sqrt(3.0/7.0), 1.0};
+const double GaussW[QN] = {0.1, 49.0/90.0, 32.0/45.0, 49.0/90.0, 0.1};
+
 class DiscreteEquation{//smart pointers to be used
 	PotentialTrace& F;
 	EnergySpace& E;
