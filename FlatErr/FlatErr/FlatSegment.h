@@ -17,4 +17,6 @@ public:
 	std::pair<double, double> GetSubsegment(size_t i){
 		return std::pair<double, double>(pts[i-1], pts[i]);
 	}
+
+	size_t size() {return pts.size() - 1;}
 };
