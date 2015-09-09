@@ -15,10 +15,22 @@ class DiscreteEquation{//smart pointers to be used
 
 	bool mc;
 	bool fc;
+    bool sc;
 	std::vector<std::vector<double>> matrix;
+	std::vector<double> free_member;
+
+    static double IntegralF(double a0, double a1, PotentialTrace& F){
+        if(a0 >= a1) return 0.0;
+        double k = 0.5*(a1 - a0);
+        double b = 0.5*(a1 + a0);
+        double sm = 0.0;
+        for(size_t i = 0; i < QN; ++i)
+            sm += F(GaussX[i]*k + b)*GaussW[i];
+        return k*sm;
+    }
 
 public:
-	DiscreteEquation(EnergySpace& space, PotentialTrace& trace, FlatSegment& segment):F(trace),E(space),Sg(segment), mc(false), fc(false) {};
+	DiscreteEquation(EnergySpace& space, PotentialTrace& trace, FlatSegment& segment):F(trace),E(space),Sg(segment), mc(false), fc(false), sc(false) {};
 	
 	void CreateMatrix(){
 		std::vector<double> buf = std::vector<double>(Sg.size());
@@ -33,5 +45,16 @@ public:
 				matrix[j][i] = matrix[i][j];
 			}
 		}
+        mc = true;
+	}
+	
+    void CreateFreeMember(){
+		free_member = std::vector<double>(Sg.size());
+
+		for(size_t i = 0; i < Sg.size(); ++i){
+            auto sgi = Sg.GetSubsegment(i);
+            free_member[i] = IntegralF(sgi.first, sgi.second, F);
+		}
+        fc = true;
 	}
 };
