@@ -1,5 +1,7 @@
 #pragma once
 
+#include <fstream>
+
 #include "FlatSegment.h"
 #include "PotentialTrace.h"
 #include "EnergySpace.h"
@@ -11,17 +13,17 @@ const double GaussW[QN] = {0.1, 49.0/90.0, 32.0/45.0, 49.0/90.0, 0.1};
 const double epsilon = 1e-7;
 
 class DiscreteEquation{//smart pointers to be used
-	PotentialTrace& F;
-	EnergySpace& E;
-	FlatSegment& Sg;
+    PotentialTrace& F;
+    EnergySpace& E;
+    FlatSegment& Sg;
 
-	bool mc;
-	bool fc;
+    bool mc;
+    bool fc;
     bool sc;
-	std::vector<std::vector<double>> matrix;
-	std::vector<double> free_member;
+    std::vector<std::vector<double>> matrix;
+    std::vector<double> free_member;
 
-	std::vector<double> solution;
+    std::vector<double> solution;
 
     size_t n;
 
@@ -35,72 +37,85 @@ class DiscreteEquation{//smart pointers to be used
         return k*sm;
     }
 
-	void CreateMatrix(){
-		std::vector<double> buf = std::vector<double>(n);
-		matrix = std::vector<std::vector<double>>(n, buf);
+    void CreateMatrix(){
+        std::vector<double> buf = std::vector<double>(n);
+        matrix = std::vector<std::vector<double>>(n, buf);
 
-		for(size_t i = 0; i < n; ++i){
-			DP dp1 = Sg.GetSubsegment(i);
-			matrix[i][i] = E(dp1.first, dp1.second, dp1.first, dp1.second);
-			for(size_t j = i+1; j < n; ++j){
-				DP dp2 = Sg.GetSubsegment(j);
-				matrix[i][j] = E(dp1.first, dp1.second, dp2.first, dp2.second);
-				matrix[j][i] = matrix[i][j];
-			}
-		}
+        for(size_t i = 0; i < n; ++i){
+            DP dp1 = Sg.GetSubsegment(i);
+            matrix[i][i] = E(dp1.first, dp1.second, dp1.first, dp1.second);
+            for(size_t j = i+1; j < n; ++j){
+                DP dp2 = Sg.GetSubsegment(j);
+                matrix[i][j] = E(dp1.first, dp1.second, dp2.first, dp2.second);
+                matrix[j][i] = matrix[i][j];
+            }
+        }
         mc = true;
-	}
-	
-    void CreateFreeMember(){
-		free_member = std::vector<double>(n);
+    }
 
-		for(size_t i = 0; i < n; ++i){
+    void CreateFreeMember(){
+        free_member = std::vector<double>(n);
+
+        for(size_t i = 0; i < n; ++i){
             auto sgi = Sg.GetSubsegment(i);
             free_member[i] = IntegralF(sgi.first, sgi.second, F);
-		}
+        }
         fc = true;
-	}
+    }
 
     void GaussSeidelSolver(){
         auto divider = std::vector<double>(n, 1.0);
 
-            for (int i = 0; i < Sg.size(); i++){
-                divider[i] = matrix[i][i];
-                matrix[i][i] = 0.0;
-                free_member[i] /= divider[i];
+        for (int i = 0; i < Sg.size(); i++){
+            divider[i] = matrix[i][i];
+            matrix[i][i] = 0.0;
+            free_member[i] /= divider[i];
+
+            for (int j = 0; j < n; j++){
+                matrix[i][j] /= -divider[i];
+            }
+        }
+
+        solution = free_member;
+
+        double eps = 1;
+        while (eps > epsilon){
+            eps = 0;
+            for (int i = 0; i < n; i++){
+                double old = solution[i];
+                double Buf = 0.0;
 
                 for (int j = 0; j < n; j++){
-                    matrix[i][j] /= -divider[i];
+                    Buf += matrix[i][j] * solution[j];
                 }
+
+                solution[i] = Buf + free_member[i];
+
+                double c_eps = fabs(old - solution[i]) / (1.0 + fabs(solution[i]));
+                if (c_eps > eps) eps = c_eps;
             }
+        } 
+        sc = true;
+    }
 
-            solution = free_member;
+    void SaveSolution(const std::string& path){
+        std::ofstream out(path);
 
-            double eps = 1;
-            while (eps > epsilon){
-                eps = 0;
-                for (int i = 0; i < n; i++){
-                    double old = solution[i];
-                    double Buf = 0.0;
+        for(size_t i = 0; i < n; ++i)
+        {
+            out<<solution[i]<<std::endl;
+        }
 
-                    for (int j = 0; j < n; j++){
-                            Buf += matrix[i][j] * solution[j];
-                    }
-
-                    solution[i] = Buf + free_member[i];
-
-                    double c_eps = fabs(old - solution[i]) / (1.0 + fabs(solution[i]));
-                    if (c_eps > eps) eps = c_eps;
-                }
-            }    
+        out.close();
     }
 
 public:
     DiscreteEquation(EnergySpace& space, PotentialTrace& trace, FlatSegment& segment):F(trace),E(space),Sg(segment), mc(false), fc(false), sc(false), n(segment.size()) {};
-	
-    void ConstructandSolveandSave(){
+
+    void ConstructandSolveandSave(const std::string& path){
         CreateMatrix();
         CreateFreeMember();
         GaussSeidelSolver();
+        SaveSolution(path);
     }
 };
