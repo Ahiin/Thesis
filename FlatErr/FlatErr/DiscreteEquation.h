@@ -29,9 +29,6 @@ class DiscreteEquation{//smart pointers to be used
         return k*sm;
     }
 
-public:
-	DiscreteEquation(EnergySpace& space, PotentialTrace& trace, FlatSegment& segment):F(trace),E(space),Sg(segment), mc(false), fc(false), sc(false) {};
-	
 	void CreateMatrix(){
 		std::vector<double> buf = std::vector<double>(Sg.size());
 		matrix = std::vector<std::vector<double>>(Sg.size(), buf);
@@ -57,4 +54,9 @@ public:
 		}
         fc = true;
 	}
+
+public:
+	DiscreteEquation(EnergySpace& space, PotentialTrace& trace, FlatSegment& segment):F(trace),E(space),Sg(segment), mc(false), fc(false), sc(false) {};
+	
+    
 };
